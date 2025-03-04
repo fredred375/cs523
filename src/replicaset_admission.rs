@@ -84,12 +84,9 @@ fn validate_state(res: AdmissionResponse, obj: &DynamicObject) -> Result<Admissi
     // 3. Validate template, metadata, and spec exist
     let template = spec.get("template").ok_or("Missing spec.template field")?;
     let template_metadata = template.get("metadata").ok_or("Missing spec.template.metadata field")?;
-    let template_spec = template.get("spec").ok_or("Missing spec.template.spec field")?;
-    // if !template.get("spec").is_some() {
-    //     return Err("Missing spec.template.spec field".into());
-    // }
-    // log the value of spec
-    info!("spec: {:?}", template_spec);
+    if !template.get("spec").is_some() {
+        return Err("Missing spec.template.spec field".into());
+    }
 
     // 4. Validate selector matches template's metadata labels
     let template_labels = template_metadata.get("labels");
