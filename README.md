@@ -9,7 +9,7 @@ Before setting up, ensure you have the following tools installed. The listed ver
 
 ## Setup
 
-Follow these steps to set up and test the example admission controller.
+Follow these steps to set up and test the ReplicaSet admission controller.
 
 
 
@@ -45,6 +45,6 @@ The setup script generates TLS certificates and applies the necessary Kubernetes
 
 You can test the admission controller using the provided manifests:
 ```bash
-kubectl apply -f manifests/admission_ok.yaml # should succeed and add a label
-kubectl apply -f manifests/admission_reject.yaml # should fail
+kubectl apply -f manifests/replicaset/ok.yaml # should succeed
+kubectl apply -f manifests/replicaset/negative_replicas.yaml # should show "admission webhook "admission-server.default.svc" denied the request:..."
 ```
