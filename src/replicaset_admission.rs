@@ -63,46 +63,40 @@ async fn validate_handler(body: AdmissionReview<DynamicObject>) -> Result<impl R
 
 // The main validation handler implementing the spec requirements
 fn validate_state(res: AdmissionResponse, obj: &DynamicObject) -> Result<AdmissionResponse, Box<dyn Error>> {
-
-    let spec = obj.data.get("spec").ok_or("Missing spec field")?;
+    let spec = obj.data.get("spec").ok_or("Missing 'spec' field in the object")?;
 
     // 1. Validate replicas is non-negative
     if let Some(replicas) = spec.get("replicas") {
         if replicas.as_i64().map_or(true, |r| r < 0) {
-            return Err("Spec replicas must be non-negative".into());
+            return Err("Invalid 'spec.replicas': must be non-negative".into());
         }
     }
 
     // 2. Validate selector exists and match_labels is not empty
-    let selector = spec.get("selector").ok_or("Missing spec.selector field")?;
-    let match_labels = selector.get("matchLabels").ok_or("Missing spec.selector.matchLabels field")?;
+    let selector = spec.get("selector").ok_or("Missing 'spec.selector' field")?;
+    let match_labels = selector.get("matchLabels").ok_or("Missing 'spec.selector.matchLabels' field")?;
+    let match_labels = match_labels
+        .as_object()
+        .ok_or("Invalid 'spec.selector.matchLabels': must be an object")?;
 
-    if !match_labels.is_object() || match_labels.as_object().unwrap().is_empty() {
-        return Err("spec.selector.matchLabels must be non-empty".into());
+    if match_labels.is_empty() {
+        return Err("Invalid 'spec.selector.matchLabels': must not be empty".into());
     }
 
-    // 3. Validate template, metadata, and spec exist
-    let template = spec.get("template").ok_or("Missing spec.template field")?;
-    let template_metadata = template.get("metadata").ok_or("Missing spec.template.metadata field")?;
-    if !template.get("spec").is_some() {
-        return Err("Missing spec.template.spec field".into());
-    }
+    // 3. Validate template structure
+    let template = spec.get("template").ok_or("Missing 'spec.template' field")?;
+    let template_metadata = template.get("metadata").ok_or("Missing 'spec.template.metadata' field")?;
+    let _template_spec = template.get("spec").ok_or("Missing 'spec.template.spec' field")?;
 
-    // 4. Validate selector matches template's metadata labels
-    let template_labels = template_metadata.get("labels");
-    if template_labels.is_none() {
-        return Err("spec.template.metadata.labels is required to match selector".into());
-    }
+    // 4. Validate selector matches template metadata labels
+    let template_labels = template_metadata.get("labels")
+        .and_then(|labels| labels.as_object())
+        .ok_or("Invalid 'spec.template.metadata.labels': must be an object")?;
 
-    let template_labels = template_labels.unwrap().as_object().ok_or("Template labels must be an object")?;
-    let match_labels = match_labels.as_object().unwrap();
-
-    // Check if all matchLabels exist in template labels with the same values
     for (key, value) in match_labels {
         match template_labels.get(key) {
-            Some(template_value) if template_value == value => {
-            },
-            _ => return Err(format!("Selector matchLabel '{}' not found in template labels or value doesn't match", key).into())
+            Some(template_value) if template_value == value => continue,
+            _ => return Err(format!("Selector matchLabel '{}' not found in template labels or value doesn't match", key).into()),
         }
     }
 
