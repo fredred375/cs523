@@ -1,9 +1,0 @@
-apiVersion: clux.dev/v1
-kind: Foo
-metadata:
-  name: reject
-  labels:
-    illegal: "ohno"
-spec:
-  name: reject
-  info: this is rejected

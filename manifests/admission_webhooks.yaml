@@ -1,28 +1,22 @@
 ---
 apiVersion: admissionregistration.k8s.io/v1
-kind: MutatingWebhookConfiguration
+kind: MutatingWebhookConfiguration # should be validating, but mutating is used to validate before K8s own validation
 metadata:
   name: admission-controller
   namespace: default
 webhooks:
   - name: admission-server.default.svc
-    # Optionally restrict events from namespaces with a specific label.
-    # namespaceSelector:
-    #   matchLabels:
-    #     some-label: "true"
     clientConfig:
       caBundle: "${CA_PEM_B64}"
-      # url: "https://${PRIVATE_IP}:8443/mutate"
-      # For controllers behind k8s services, use the format below instead of a url
       service:
         name: admission-server
         namespace: default
-        path: "/mutate"
+        path: "/validate"
     rules:
       - operations: ["CREATE", "UPDATE"]
-        apiGroups: ["clux.dev"]
+        apiGroups: ["apps"]
         apiVersions: ["v1"]
-        resources: ["foos"]
+        resources: ["replicasets"]
     failurePolicy: Fail
     admissionReviewVersions: ["v1", "v1beta1"]
     sideEffects: None
