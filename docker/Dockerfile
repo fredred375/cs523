@@ -1,6 +1,6 @@
 FROM clux/muslrust:stable AS builder
 
-COPY Cargo.* .
+COPY Cargo.* ./
 COPY src/ src/
 
 RUN --mount=type=cache,target=/volume/target \
